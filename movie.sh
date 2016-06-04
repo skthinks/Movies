@@ -6,7 +6,7 @@ readonly DIRECTORY_NAME=$1
 function add_style(){
     tput bold
     tput setaf $2
-    echo $1
+    echo -e $1
     tput sgr 0
     return 0
 }
@@ -31,8 +31,8 @@ function main(){
     fi
     # Fetching Movies and removing 
     movie_list=$(ls $DIRECTORY_NAME \
-     | grep "" | \
-     sed 's/_/./g; s/ /./g')
+        | grep "" \
+        | sed 's/_/./g; s/ /./g')
     local movie_count=$(echo $movie_list \
         | wc -l)
     if [ $movie_count == 0 ]; then
@@ -49,7 +49,11 @@ function main(){
     done
     # Above, a file is created with 2 coloumns of Movie and rating
     # Then it is sorted
-    echo -e $output | sort -k 1 -r 
+    echo -e $output
+    out_improved=$(echo -e $output | sort -k 1 -r)
+    echo -e $out_improved
+    add_style $out_improved 4
+    echo -e $output | sort -k 1 -r
     tput setaf 1
     tput bold
     printf  "\n\nN/A: The application was unable to fetch your movie. We regret this deeply\n"
