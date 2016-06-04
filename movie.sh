@@ -1,55 +1,57 @@
 #!bin/bash
 
-function getrating()
-{
-#Fetch tuple from the Omdb API
-curl -s  "http://www.omdbapi.com/?t=$1&y=&plot=short&r=xml" > mov.txt
-#Getting the Line with the information
-grep -o imdbRating=".*" mov.txt > submov.txt
-input="submov.txt"
-echo ""
-ctr=0
-rating=""
-#Extracting the rating. Since the format is XYZ= "x"
-#Track the opening and closing quotes to get x which is rating
-#ctr tracks number of " encountered
-while IFS= read -r -n1 var
-do
-  if [ $ctr -eq 2 ]
-  then
-        break
-  elif [ $var == '"' ]
-  then
-        ctr=$(( $ctr + 1 ))
-  elif [ $ctr -eq 1 ]
-  then
-        rating="$rating$var"
-  else
-        continue
-  fi
-done < "$input"
-rm mov.txt
-rm submov.txt
-#Convert String to Float
-rate=$(printf %.1f $rating)
-echo $rate
+readonly NUM_ARGUMENTS=$#
+readonly DIRECTORY_NAME=$1
+
+function add_style(){
+    tput bold
+    tput setaf $2
+    echo -e $1
+    tput sgr 0
+    return 0
 }
 
-rm out.txt
-#Fetching Movies and removing _
-ls movies > movlist.txt
-sed 's/_/./g' movlist.txt > mov2.txt
-input2="mov2.txt"
-echo Rating '     '  Novie >> out.txt
-while IFS= read -r var2
-do
-  #echo $var2
-  rating=$( getrating $var2 )
-  #echo $rating
-  echo $rating '      '  $var2 >> out.txt
-done < "$input2"
-#Above, a file is created with 2 coloumns of Movie and rating
-#Then it is sorted
-sort -k 1 -r out.txt
-exit 1
 
+function get_rating(){
+    local movie_name=$1
+    local rating_in_string=$(curl -s  "http://www.omdbapi.com/?t=$movie_name&y=&plot=short&r=xml" \
+       | grep -o imdbRating=".*" \
+       | cut -c 13,14,15)
+    local rating_in_float=$(printf %.1f $rating_in_string)     # Convert Rating String to Float
+    echo $rating_in_float
+}
+
+
+function main(){
+   
+    # There should be exactly one argument i.e the address path
+    if [ $NUM_ARGUMENTS != 1 ]; then
+        add_style "This application takes one argument : Movie Directory" 1
+        exit 4
+    fi
+    # Fetching Movies and removing 
+    local movie_list=$( ls $DIRECTORY_NAME \
+        | grep "" \
+        | sed 's/ /./g; s/_/./g')
+    local movie_count=$(echo $movie_list \
+        | wc -l)
+    if [ $movie_count == 0 ]; then
+        add_style "Directory is either Invalid or Empty" 1 
+        exit 4
+    fi
+    local output="Rating      Movie\n"
+    for movie_name in $movie_list; do
+        local rating=$( get_rating $movie_name )
+        if [ $rating == 0.0 ]; then
+            rating="N/A"
+        fi
+        output="$output $rating       $movie_name\n"
+    done
+    # Above, a file is created with 2 coloumns of Movie and rating
+    # Then it is sorted
+    echo -e $output | sort -k 1 -r
+    add_style  "\n\nN/A: The application was unable to fetch your movie. We regret this deeply\n" 1
+    exit 0
+}
+
+main
