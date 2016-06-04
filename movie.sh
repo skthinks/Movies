@@ -1,6 +1,7 @@
 #!bin/bash
 
-readonly TEMP_PATH="/var/folders/3c/gjd471t51px36pjlbr7zggmh0000gn/T/imdb"
+#readonly TEMP_PATH="/var/folders/3c/gjd471t51px36pjlbr7zggmh0000gn/T/imdb"
+readonly TEMP_PATH="$TMPDIR/imdb"
 mkdir $TEMP_PATH      # Making a Folder to Dump Files
 readonly NUM_ARGUMENTS=$#
 readonly DIRECTORY_NAME=$1
