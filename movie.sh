@@ -1,55 +1,58 @@
 #!bin/bash
 
-function getrating()
+function add_style()
 {
-#Fetch tuple from the Omdb API
-curl -s  "http://www.omdbapi.com/?t=$1&y=&plot=short&r=xml" > mov.txt
-#Getting the Line with the information
-grep -o imdbRating=".*" mov.txt > submov.txt
-input="submov.txt"
-echo ""
-ctr=0
-rating=""
-#Extracting the rating. Since the format is XYZ= "x"
-#Track the opening and closing quotes to get x which is rating
-#ctr tracks number of " encountered
-while IFS= read -r -n1 var
-do
-  if [ $ctr -eq 2 ]
-  then
-        break
-  elif [ $var == '"' ]
-  then
-        ctr=$(( $ctr + 1 ))
-  elif [ $ctr -eq 1 ]
-  then
-        rating="$rating$var"
-  else
-        continue
-  fi
-done < "$input"
-rm mov.txt
-rm submov.txt
+        tput bold
+        tput setaf $2
+        echo $1
+        tput sgr 0
+        return 0
+}
+
+mkdir tmp
+function get_rating()
+{
+response=$( curl -s  "http://www.omdbapi.com/?t=$1&y=&plot=short&r=xml" | grep -o imdbRating=".*" | cut -c 13,14,15)
 #Convert String to Float
-rate=$(printf %.1f $rating)
+rate=$(printf %.1f $response)
 echo $rate
 }
 
-rm out.txt
-#Fetching Movies and removing _
-ls movies > movlist.txt
-sed 's/_/./g' movlist.txt > mov2.txt
-input2="mov2.txt"
-echo Rating '     '  Novie >> out.txt
-while IFS= read -r var2
+#There should be exactly one argument i.e the address path
+if [ $# != 1 ]
+then
+	add_style "This application takes one argument : Movie Dorectory" 1
+	exit 1
+fi
+#Fetching Movies and removing 
+ls $1 > tmp/movlist.txt
+movie_count=$( cat tmp/movlist.txt | wc -l )
+if [ $movie_count == 0 ]
+then
+        add_style "Directory is either Invalid or Empty" 1 
+        exit 1
+fi
+sed 's/_/./g' tmp/movlist.txt > tmp/temp_clean_mov.txt
+sed 's/ /./g' tmp/temp_clean_mov.txt > tmp/clean_mov.txt
+echo Rating '     '  Novie >> tmp/out.txt  
+while IFS= read -r movie_name
 do
-  #echo $var2
-  rating=$( getrating $var2 )
-  #echo $rating
-  echo $rating '      '  $var2 >> out.txt
-done < "$input2"
+  rating=$( get_rating $movie_name )
+  if [ $rating == 0.0 ]
+  then
+	  rating="N/A"
+  fi
+echo $rating '      '  $movie_name >> tmp/out.txt
+done < "tmp/clean_mov.txt"
 #Above, a file is created with 2 coloumns of Movie and rating
 #Then it is sorted
-sort -k 1 -r out.txt
-exit 1
+clear
+sort -k 1 -r tmp/out.txt
+tput setaf 1
+tput bold
+printf  "\n\nN/A: The application was unable to fetch your movie. We regret this deeply\n"
+tput sgr 0
+rm -rf tmp
+exit 0
+
 
