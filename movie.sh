@@ -22,7 +22,7 @@ echo $rate
 if [ $# != 1 ]
 then
 	add_style "This application takes one argument : Movie Dorectory" 1
-	exit 1
+	exit 4
 fi
 #Fetching Movies and removing 
 ls $1 > tmp/movlist.txt
@@ -30,7 +30,7 @@ movie_count=$( cat tmp/movlist.txt | wc -l )
 if [ $movie_count == 0 ]
 then
         add_style "Directory is either Invalid or Empty" 1 
-        exit 1
+        exit 4
 fi
 sed 's/_/./g' tmp/movlist.txt > tmp/temp_clean_mov.txt
 sed 's/ /./g' tmp/temp_clean_mov.txt > tmp/clean_mov.txt
